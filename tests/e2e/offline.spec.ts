@@ -1,55 +1,17 @@
 import { expect, test } from "@playwright/test";
 
-test("offline create and reload persists note", async ({ browser }) => {
-  const context = await browser.newContext();
-  const page = await context.newPage();
-
+test("offline create and reload persists note", async ({ page, context }) => {
   await page.goto("/");
+  await page.getByRole("link", { name: "Create a new note" }).click();
+  await expect(page).toHaveURL(/\/note\?id=/);
+  await page.getByLabel("Title").fill("Offline Note");
+  await page.getByLabel("Body").fill("Saved without a network connection");
   await context.setOffline(true);
-
-  await page.evaluate(async () => {
-    const request = indexedDB.open("aurikrex-notes");
-    const db = await new Promise<IDBDatabase>((resolve, reject) => {
-      request.onerror = () => reject(request.error);
-      request.onsuccess = () => resolve(request.result);
-      request.onupgradeneeded = () => {
-        const upgradeDb = request.result;
-        if (!upgradeDb.objectStoreNames.contains("notes")) {
-          upgradeDb.createObjectStore("notes", { keyPath: "id" });
-        }
-        if (!upgradeDb.objectStoreNames.contains("settings")) {
-          upgradeDb.createObjectStore("settings", { keyPath: "id" });
-        }
-      };
-    });
-
-    const now = Date.now();
-    const note = {
-      id: crypto.randomUUID(),
-      title: "Offline Note",
-      body: "Offline Body",
-      tags: [],
-      pinned: false,
-      createdAt: now,
-      updatedAt: now,
-      deletedAt: null,
-      version: 1
-    };
-
-    await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction("notes", "readwrite");
-      tx.objectStore("notes").put(note);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  });
-
+  await page.getByLabel("Body").fill("Edited while offline");
   await context.setOffline(false);
-  await page.goto("/");
-  await expect(page.getByText("Offline Note")).toBeVisible();
-
-  await page.reload();
-  await expect(page.getByText("Offline Note")).toBeVisible();
+  await page.goto(page.url());
+  await expect(page.getByLabel("Title")).toHaveValue("Offline Note");
+  await expect(page.getByLabel("Body")).toHaveValue("Edited while offline");
 });
 
 test("share target parameters create note", async ({ page }) => {
