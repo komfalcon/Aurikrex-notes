@@ -92,3 +92,8 @@ Current icon files are placeholders:
 - `public/icons/maskable-512x512.png`
 
 Replace each with real branded assets using the same file names and exact dimensions where specified in the manifest (192x192 and 512x512). Keep `type: image/png` and `purpose` fields unchanged unless your branding needs differ.
+
+## Branding
+- Full product name: Aurikrex Notes
+- PWA short name: A-Notes
+- App mark: `/public/icons/a-notes-mark.png` derived from the Aurikrex symbol with a subtle note-page cue.
