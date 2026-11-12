@@ -4,3 +4,5 @@ out
 test-results
 playwright-report
 tsconfig.tsbuildinfo
+
+public/sw.js

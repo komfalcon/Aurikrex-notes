@@ -1,0 +1,1 @@
+{"routes":[{"path":"/","title":"Notes"},{"path":"/new","title":"New note"},{"path":"/note","title":"Note editor"},{"path":"/trash","title":"Trash"},{"path":"/settings","title":"Settings"}]}
