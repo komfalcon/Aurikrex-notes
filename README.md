@@ -96,4 +96,4 @@ Replace each with real branded assets using the same file names and exact dimens
 ## Branding
 - Full product name: Aurikrex Notes
 - PWA short name: A-Notes
-- App mark: `/public/icons/a-notes-mark.png` derived from the Aurikrex symbol with a subtle note-page cue.
+- App mark: `/public/icons/a-notes-mark-reduced.png` uses a reduced diagonal-ribbon and diamond accent inside a note-page silhouette; it does not reproduce the full Aurikrex logo.
