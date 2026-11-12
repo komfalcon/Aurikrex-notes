@@ -11,6 +11,9 @@ Offline-first notes PWA built with Next.js App Router, strict TypeScript, Dexie 
 - Soft delete + 30-day purge
 - JSON export/import with schema validation
 - PWA manifest + service worker scaffold with Serwist
+- Browser-local semantic search and related-note suggestions with Transformers.js embeddings
+- Native browser voice dictation in the editor
+- Optional Cloudflare Workers AI BYOK smart titles and summaries, with credentials stored locally
 - Mobile-first full-height (`100dvh`) layout
 
 ## Stack
@@ -20,6 +23,7 @@ Offline-first notes PWA built with Next.js App Router, strict TypeScript, Dexie 
 - Tailwind CSS + tokens in `src/styles/tokens.css`
 - Dexie for IndexedDB
 - Zod runtime validation
+- `@huggingface/transformers` with `Xenova/all-MiniLM-L6-v2` via WASM
 - Serwist service worker (`@serwist/next` integration)
 - Vitest + Testing Library (unit)
 - Playwright (E2E)
@@ -51,6 +55,8 @@ Offline-first notes PWA built with Next.js App Router, strict TypeScript, Dexie 
   - `createNote`, `updateNote`, `softDeleteNote`, `restoreNote`
   - `listNotes`, `searchNotes`, `togglePin`
   - `purgeExpired` (30-day hard delete)
+- `embedding` vectors are generated on body saves and used for semantic search / related notes
+- Cloudflare credentials are stored in the local Dexie `Settings` table and requests go directly to Cloudflare
   - `exportAll`, `importJson`
 - `useStoragePersistence` requests `navigator.storage.persist()` at startup
 

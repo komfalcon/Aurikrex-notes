@@ -39,6 +39,14 @@ const nextConfig = {
   output: "export",
   reactStrictMode: true,
   images: { unoptimized: true },
+  webpack: (config) => {
+    config.resolve ??= {};
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@huggingface/transformers": path.join(root, "node_modules/@huggingface/transformers/dist/transformers.web.js"),
+    };
+    return config;
+  },
 };
 
 export default withSerwist(nextConfig);
