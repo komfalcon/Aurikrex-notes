@@ -12,9 +12,11 @@ button, a, input[type="file"] { min-width: 44px; min-height: 44px; }
 .app-frame { height: 100dvh; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); background: radial-gradient(circle at 90% -10%, rgba(59,130,246,.16), transparent 38%), #0f172a; }
 .app-header { padding: 18px 20px 14px; border-bottom: 1px solid rgba(148,163,184,.12); flex: none; }
 .header-title-row { display: flex; align-items: center; gap: 12px; max-width: 720px; margin: 0 auto; }
+.brand-logo { display: block; width: 38px; height: 48px; flex: none; object-fit: contain; border-radius: 10px; background: #000; box-shadow: inset 0 0 0 1px rgba(255,255,255,.05); }
 .header-title-row h1 { margin: 3px 0 0; font-size: 24px; letter-spacing: -.04em; }
 .eyebrow, .settings-label { color: #94a3b8; font: 600 10px/1 var(--font-jetbrains-mono), monospace; letter-spacing: .14em; text-transform: uppercase; }
 .status-dot { width: 8px; height: 8px; margin-left: auto; border-radius: 999px; background: #3b82f6; box-shadow: 0 0 0 4px rgba(59,130,246,.14); }
+.app-content { width: 100%; max-width: 720px; min-height: 0; flex: 1; margin: 0 auto; display: flex; flex-direction: column; overflow: hidden; }
 .app-content { width: 100%; max-width: 720px; min-height: 0; flex: 1; margin: 0 auto; display: flex; flex-direction: column; overflow: hidden; }
 .icon-button, .card-action { display: inline-flex; align-items: center; justify-content: center; border: 0; background: transparent; color: #94a3b8; border-radius: 14px; transition: all .2s ease; }
 .icon-button:hover, .card-action:hover { color: #fff; background: rgba(148,163,184,.1); }
