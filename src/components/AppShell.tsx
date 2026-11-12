@@ -38,7 +38,6 @@ export const AppShell = ({ title, eyebrow = "AURIKREX / OFFLINE", children, show
             <p className="eyebrow">{eyebrow}</p>
             <h1>{title}</h1>
           </div>
-          <span className="status-dot" aria-label="Saved offline" />
         </div>
       </header>
       <section className="app-content">{children}</section>
