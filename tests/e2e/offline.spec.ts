@@ -21,3 +21,11 @@ test("share target parameters create note", async ({ page }) => {
   await expect(page.getByLabel("Body")).toHaveValue(/Shared Text/);
   await expect(page.getByLabel("Body")).toHaveValue(/https:\/\/example.com/);
 });
+
+test("Cloudflare credentials persist locally", async ({ page }) => {
+  await page.goto("/settings");
+  await page.evaluate(() => localStorage.setItem("aurikrex-notes.cloudflare.credentials", JSON.stringify({ accountId: "account-id", apiToken: "secret-token" })));
+  await page.reload();
+  await expect(page.getByLabel("Cloudflare Account ID")).toHaveValue("account-id");
+  await expect(page.getByLabel("Cloudflare API Token")).toHaveValue("secret-token");
+});

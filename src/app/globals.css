@@ -47,14 +47,22 @@ button, a, input[type="file"] { min-width: 44px; min-height: 44px; }
 .nav-item.active { color: #3b82f6; }
 .fab { position: fixed; z-index: 3; right: 22px; bottom: calc(82px + env(safe-area-inset-bottom)); display: grid; place-items: center; width: 58px; height: 58px; color: #fff; border: 1px solid rgba(255,255,255,.2); border-radius: 20px; background: #3b82f6; box-shadow: 0 12px 30px rgba(0,0,0,.35); transition: transform .2s ease; }
 .fab:hover { transform: translateY(-2px) scale(1.03); }
-.editor-wrap { display: flex; flex: 1; min-height: 0; flex-direction: column; padding: 22px 20px 16px; }
+.editor-wrap { display: flex; flex: 1; min-height: 0; flex-direction: column; padding: 22px 20px 16px; overflow-y: auto; }
 .editor-title { width: 100%; padding: 0 0 14px; border: 0; outline: 0; background: transparent; color: #fff; font-size: 30px; font-weight: 650; letter-spacing: -.05em; }
 .editor-title::placeholder, .editor-body::placeholder { color: #475569; }
+.editor-toolbar { display: flex; gap: 8px; padding: 0 0 10px; }
+.tool-button { min-height: 36px; padding: 0 11px; border: 1px solid rgba(59,130,246,.24); border-radius: 10px; color: #93c5fd; background: rgba(59,130,246,.1); font-size: 11px; font-weight: 600; }
+.tool-button:hover, .tool-button.active { background: rgba(59,130,246,.22); }
+.tool-button:disabled { cursor: not-allowed; opacity: .4; }
 .editor-body { flex: 1; min-height: 160px; width: 100%; resize: none; overflow-y: auto; padding: 8px 0; border: 0; outline: 0; background: transparent; color: #e2e8f0; font-size: 16px; line-height: 1.7; }
 .editor-footer { display: flex; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid rgba(148,163,184,.12); }
 .tag-input { display: flex; align-items: center; flex: 1; gap: 8px; color: #64748b; font: 11px var(--font-jetbrains-mono), monospace; }
 .tag-input input { min-width: 0; width: 100%; padding: 8px 0; border: 0; outline: 0; background: transparent; color: #94a3b8; font: 12px var(--font-jetbrains-mono), monospace; }
 .save-state { color: #64748b; font: 10px var(--font-jetbrains-mono), monospace; white-space: nowrap; }
+.ai-error { margin: 4px 0 8px; color: #fbbf24; font-size: 11px; }
+.related-notes { padding: 14px 0; border-top: 1px solid rgba(148,163,184,.12); }
+.related-note { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 38px; color: #cbd5e1; font-size: 12px; }
+.related-note small { color: #64748b; font: 10px var(--font-jetbrains-mono), monospace; }
 .restore-button, .primary-button, .secondary-button { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 15px; border: 0; border-radius: 13px; font-size: 12px; font-weight: 600; transition: all .2s ease; }
 .restore-button, .secondary-button { color: #93c5fd; background: rgba(59,130,246,.12); }
 .restore-button:hover, .secondary-button:hover { background: rgba(59,130,246,.22); }
@@ -64,9 +72,18 @@ button, a, input[type="file"] { min-width: 44px; min-height: 44px; }
 .settings-copy { margin: 0; color: #94a3b8; font-size: 13px; line-height: 1.6; }
 .primary-button { color: #fff; background: #3b82f6; }
 .primary-button:hover { filter: brightness(1.1); }
+.primary-button:disabled { cursor: not-allowed; opacity: .5; }
 .secondary-button { cursor: pointer; }
 .secondary-button input { display: none; }
 .settings-card.quiet { gap: 9px; }
+.settings-field { display: flex; flex-direction: column; gap: 7px; color: #94a3b8; font: 11px var(--font-jetbrains-mono), monospace; }
+.settings-field input { min-height: 44px; padding: 0 12px; border: 1px solid rgba(148,163,184,.14); border-radius: 12px; outline: none; background: #0f172a; color: #fff; }
+.settings-field input:focus { border-color: #3b82f6; }
+.settings-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.neuron-card { display: flex; flex-direction: column; gap: 7px; padding: 14px; border: 1px solid rgba(59,130,246,.2); border-radius: 14px; background: rgba(59,130,246,.08); }
+.neuron-card strong { font-size: 14px; }
+.neuron-card span, .neuron-card a { color: #94a3b8; font-size: 11px; line-height: 1.5; }
+.neuron-card a { color: #93c5fd; }
 .backup-time { margin: 0; color: #64748b; font: 11px var(--font-jetbrains-mono), monospace; }
 .backup-time strong { color: #94a3b8; font-weight: 400; }
 @media (min-width: 721px) { .app-frame { border-left: 1px solid rgba(148,163,184,.08); border-right: 1px solid rgba(148,163,184,.08); } .fab { position: absolute; } }

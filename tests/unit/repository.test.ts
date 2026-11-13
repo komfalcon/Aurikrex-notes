@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
-import { createNote, purgeExpired, softDeleteNote } from "@/lib/notes/repository";
+import { createNote, getNeuronLedger, purgeExpired, recordNeuronUsage, softDeleteNote } from "@/lib/notes/repository";
 
 describe("purgeExpired", () => {
   beforeEach(async () => {
@@ -36,6 +36,22 @@ describe("purgeExpired", () => {
   });
 });
 
+describe("daily Neurons ledger", () => {
+  beforeEach(async () => {
+    await db.delete();
+    db.close();
+    await db.open();
+  });
+
+  it("tracks usage per account and starts a fresh ledger on the next UTC day", async () => {
+    const firstDay = Date.parse("2026-11-13T23:59:00.000Z");
+    const used = await recordNeuronUsage("account-a", 12.5, firstDay);
+    expect(used.usedNeurons).toBe(12.5);
+    expect((await getNeuronLedger("account-a", firstDay)).usedNeurons).toBe(12.5);
+    expect((await getNeuronLedger("account-a", firstDay + 120_000)).usedNeurons).toBe(0);
+    expect((await getNeuronLedger("account-b", firstDay)).usedNeurons).toBe(0);
+  });
+});
 
 afterEach(() => {
   vi.useRealTimers();

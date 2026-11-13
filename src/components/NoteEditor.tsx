@@ -1,3 +1,40 @@
+"use client";
+
+import { useCallback } from "react";
 import type { Note } from "@/lib/db/schemas";
-type NoteEditorProps = { note: Note; onChange: (updates: Pick<Note, "title" | "body" | "tags">) => void };
-export const NoteEditor = ({ note, onChange }: NoteEditorProps) => <div className="editor-wrap"><input aria-label="Title" className="editor-title" value={note.title} onChange={(event) => onChange({ title: event.target.value, body: note.body, tags: note.tags })} placeholder="Untitled note" autoFocus /><textarea aria-label="Body" className="editor-body" value={note.body} onChange={(event) => onChange({ title: note.title, body: event.target.value, tags: note.tags })} placeholder="Start writing..." /><div className="editor-footer"><label className="tag-input"><span>Tags</span><input aria-label="Tags" value={note.tags.join(", ")} onChange={(event) => onChange({ title: note.title, body: note.body, tags: event.target.value.split(",").map((tag) => tag.trim()).filter((tag) => tag.length > 0) })} placeholder="Add tags" /></label><span className="save-state">Saved locally</span></div></div>;
+import { useVoiceDictation } from "@/lib/ai/useVoiceDictation";
+
+type RelatedNote = { note: Note; score: number };
+type NoteEditorProps = {
+  note: Note;
+  onChange: (updates: Pick<Note, "title" | "body" | "tags">) => void;
+  onSummarize: () => Promise<void>;
+  canSummarize: boolean;
+  isSummarizing: boolean;
+  relatedNotes: RelatedNote[];
+};
+
+export const NoteEditor = ({ note, onChange, onSummarize, canSummarize, isSummarizing, relatedNotes }: NoteEditorProps) => {
+  const appendDictation = useCallback((text: string) => {
+    const separator = note.body.length > 0 && !note.body.endsWith(" ") ? " " : "";
+    onChange({ title: note.title, body: `${note.body}${separator}${text}`, tags: note.tags });
+  }, [note.body, note.tags, note.title, onChange]);
+  const dictation = useVoiceDictation(appendDictation);
+
+  return (
+    <div className="editor-wrap">
+      <input aria-label="Title" className="editor-title" value={note.title} onChange={(event) => onChange({ title: event.target.value, body: note.body, tags: note.tags })} placeholder="Untitled note" autoFocus />
+      <div className="editor-toolbar" role="toolbar" aria-label="AI tools">
+        {dictation.isSupported && <button type="button" className={`tool-button${dictation.isListening ? " active" : ""}`} onClick={dictation.toggle}>{dictation.isListening ? "Stop dictation" : "Dictate"}</button>}
+        <button type="button" className="tool-button" onClick={() => void onSummarize()} disabled={!canSummarize || isSummarizing}>{isSummarizing ? "Summarizing…" : "Summarize"}</button>
+      </div>
+      <textarea aria-label="Body" className="editor-body" value={note.body} onChange={(event) => onChange({ title: note.title, body: event.target.value, tags: note.tags })} placeholder="Start writing..." />
+      {dictation.error && <p className="ai-error">{dictation.error}</p>}
+      {relatedNotes.length > 0 && <section className="related-notes" aria-label="Related Notes"><p className="settings-label">Related notes</p>{relatedNotes.map(({ note: related, score }) => <a key={related.id} className="related-note" href={`/note?id=${related.id}`}><span>{related.title || "Untitled note"}</span><small>{Math.round(score * 100)}%</small></a>)}</section>}
+      <div className="editor-footer">
+        <label className="tag-input"><span>Tags</span><input aria-label="Tags" value={note.tags.join(", ")} onChange={(event) => onChange({ title: note.title, body: note.body, tags: event.target.value.split(",").map((tag) => tag.trim()).filter((tag) => tag.length > 0) })} placeholder="Add tags" /></label>
+        <span className="save-state">Saved locally</span>
+      </div>
+    </div>
+  );
+};

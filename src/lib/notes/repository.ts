@@ -1,5 +1,12 @@
 import { db } from "@/lib/db";
-import { ExportSchema, NoteSchema, type ExportPayload, type Note } from "@/lib/db/schemas";
+import {
+  ExportSchema,
+  NeuronLedgerSchema,
+  NoteSchema,
+  type ExportPayload,
+  type NeuronLedger,
+  type Note
+} from "@/lib/db/schemas";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PURGE_WINDOW_MS = 30 * DAY_MS;
@@ -7,9 +14,11 @@ const PURGE_WINDOW_MS = 30 * DAY_MS;
 const normalizeTags = (tags: string[]): string[] =>
   tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0);
 
-export const createNote = async (input?: Partial<Pick<Note, "title" | "body" | "tags">>): Promise<Note> => {
+export const createNote = async (
+  input?: Partial<Pick<Note, "title" | "body" | "tags">>
+): Promise<Note> => {
   const now = Date.now();
-  const note: Note = {
+  const note: Note = NoteSchema.parse({
     id: crypto.randomUUID(),
     title: input?.title ?? "",
     body: input?.body ?? "",
@@ -18,23 +27,22 @@ export const createNote = async (input?: Partial<Pick<Note, "title" | "body" | "
     createdAt: now,
     updatedAt: now,
     deletedAt: null,
-    version: 1
-  };
+    version: 1,
+    embedding: null
+  });
 
-  await db.notes.put(NoteSchema.parse(note));
+  await db.notes.put(note);
   return note;
 };
 
 export const updateNote = async (
   id: string,
-  updates: Partial<Pick<Note, "title" | "body" | "tags">>
+  updates: Partial<Pick<Note, "title" | "body" | "tags" | "embedding">>
 ): Promise<Note | null> => {
   const existing = await db.notes.get(id);
-  if (!existing) {
-    return null;
-  }
+  if (!existing) return null;
 
-  const updated: Note = NoteSchema.parse({
+  const updated = NoteSchema.parse({
     ...existing,
     ...updates,
     tags: updates.tags ? normalizeTags(updates.tags) : existing.tags,
@@ -48,49 +56,40 @@ export const updateNote = async (
 
 export const softDeleteNote = async (id: string): Promise<boolean> => {
   const existing = await db.notes.get(id);
-  if (!existing || existing.deletedAt !== null) {
-    return false;
-  }
+  if (!existing || existing.deletedAt !== null) return false;
 
-  await db.notes.put({
+  await db.notes.put(NoteSchema.parse({
     ...existing,
     deletedAt: Date.now(),
     updatedAt: Date.now(),
     version: existing.version + 1
-  });
-
+  }));
   return true;
 };
 
 export const restoreNote = async (id: string): Promise<boolean> => {
   const existing = await db.notes.get(id);
-  if (!existing || existing.deletedAt === null) {
-    return false;
-  }
+  if (!existing || existing.deletedAt === null) return false;
 
-  await db.notes.put({
+  await db.notes.put(NoteSchema.parse({
     ...existing,
     deletedAt: null,
     updatedAt: Date.now(),
     version: existing.version + 1
-  });
-
+  }));
   return true;
 };
 
 export const togglePin = async (id: string): Promise<Note | null> => {
   const existing = await db.notes.get(id);
-  if (!existing) {
-    return null;
-  }
+  if (!existing) return null;
 
-  const updated: Note = {
+  const updated = NoteSchema.parse({
     ...existing,
     pinned: !existing.pinned,
     updatedAt: Date.now(),
     version: existing.version + 1
-  };
-
+  });
   await db.notes.put(updated);
   return updated;
 };
@@ -102,10 +101,7 @@ export const purgeExpired = async (now = Date.now()): Promise<number> => {
     .and((note) => note.deletedAt !== null)
     .toArray();
 
-  if (expired.length === 0) {
-    return 0;
-  }
-
+  if (expired.length === 0) return 0;
   await db.notes.bulkDelete(expired.map((note) => note.id));
   return expired.length;
 };
@@ -117,10 +113,7 @@ export const listNotes = async (deleted = false): Promise<Note[]> => {
     : notes.filter((note) => note.deletedAt === null);
 
   return filtered.sort((a, b) => {
-    if (a.pinned !== b.pinned) {
-      return a.pinned ? -1 : 1;
-    }
-
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
     return b.updatedAt - a.updatedAt;
   });
 };
@@ -134,9 +127,7 @@ export const listTrash = async (): Promise<Note[]> => {
 
 export const searchNotes = async (query: string): Promise<Note[]> => {
   const normalized = query.trim().toLowerCase();
-  if (normalized.length === 0) {
-    return listNotes(false);
-  }
+  if (normalized.length === 0) return listNotes(false);
 
   const notes = await listNotes(false);
   return notes.filter((note) => {
@@ -146,11 +137,11 @@ export const searchNotes = async (query: string): Promise<Note[]> => {
 };
 
 export const exportAll = async (): Promise<ExportPayload> => {
-  const notes = await db.notes.toArray();
+  const notes = (await db.notes.toArray()).map((note) => NoteSchema.parse(note));
   const exportedAt = Date.now();
-  const payload: ExportPayload = ExportSchema.parse({
+  const payload = ExportSchema.parse({
     app: "aurikrex-notes",
-    schemaVersion: 1,
+    schemaVersion: 2,
     exportedAt,
     notes
   });
@@ -170,15 +161,10 @@ export const exportAll = async (): Promise<ExportPayload> => {
   return payload;
 };
 
-export type ImportResult = {
-  added: number;
-  updated: number;
-  skipped: number;
-};
+export type ImportResult = { added: number; updated: number; skipped: number };
 
 export const importJson = async (raw: string): Promise<ImportResult> => {
   const parsed = ExportSchema.parse(JSON.parse(raw));
-
   let added = 0;
   let updated = 0;
   let skipped = 0;
@@ -189,10 +175,7 @@ export const importJson = async (raw: string): Promise<ImportResult> => {
       if (!current) {
         await db.notes.put(NoteSchema.parse(incoming));
         added += 1;
-        continue;
-      }
-
-      if (incoming.updatedAt > current.updatedAt) {
+      } else if (incoming.updatedAt > current.updatedAt) {
         await db.notes.put(NoteSchema.parse(incoming));
         updated += 1;
       } else {
@@ -207,4 +190,40 @@ export const importJson = async (raw: string): Promise<ImportResult> => {
 export const getLastBackupAt = async (): Promise<number | null> => {
   const settings = await db.settings.get("default");
   return settings?.lastBackupAt ?? null;
+};
+
+const utcDateKey = (now: number): string => new Date(now).toISOString().slice(0, 10);
+
+export const getNeuronLedger = async (accountId: string, now = Date.now()): Promise<NeuronLedger> => {
+  const utcDate = utcDateKey(now);
+  const id = `${accountId}:${utcDate}`;
+  const current = await db.neuronLedger.get(id);
+  if (current) return NeuronLedgerSchema.parse(current);
+
+  const initial = NeuronLedgerSchema.parse({
+    id,
+    accountId,
+    utcDate,
+    usedNeurons: 0,
+    requestCount: 0,
+    updatedAt: now
+  });
+  await db.neuronLedger.put(initial);
+  return initial;
+};
+
+export const recordNeuronUsage = async (
+  accountId: string,
+  neurons: number,
+  now = Date.now()
+): Promise<NeuronLedger> => {
+  const current = await getNeuronLedger(accountId, now);
+  const next = NeuronLedgerSchema.parse({
+    ...current,
+    usedNeurons: current.usedNeurons + Math.max(0, neurons),
+    requestCount: current.requestCount + 1,
+    updatedAt: now
+  });
+  await db.neuronLedger.put(next);
+  return next;
 };
