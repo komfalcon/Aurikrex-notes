@@ -10,21 +10,9 @@ import {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PURGE_WINDOW_MS = 30 * DAY_MS;
-export const SEMANTIC_MATCH_THRESHOLD = 0.6;
 
-const normalizeTags = (tags: string[]): string[] => tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0);
-
-const defaultSettings = (): SettingsRecord => ({
-  id: "default",
-  lastBackupAt: 0,
-  cloudflareAccountId: "",
-  cloudflareApiToken: "",
-});
-
-const lexicalSearch = (notes: Note[], normalizedQuery: string): Note[] => notes.filter((note) => {
-  const haystack = [note.title, note.body, note.tags.join(" ")].join(" ").toLowerCase();
-  return haystack.includes(normalizedQuery);
-});
+const normalizeTags = (tags: string[]): string[] =>
+  tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0);
 
 export const createNote = async (
   input?: Partial<Pick<Note, "title" | "body" | "tags">>
@@ -58,20 +46,10 @@ export const updateNote = async (
     ...existing,
     ...updates,
     tags: updates.tags ? normalizeTags(updates.tags) : existing.tags,
-    embedding: bodyChanged ? null : existing.embedding,
     updatedAt: Date.now(),
-    version: existing.version + 1,
+    version: existing.version + 1
   });
 
-  await db.notes.put(updated);
-  return updated;
-};
-
-export const updateNoteEmbedding = async (id: string, embedding: number[] | null): Promise<Note | null> => {
-  const existing = await db.notes.get(id);
-  if (!existing) return null;
-
-  const updated = NoteSchema.parse({ ...existing, embedding });
   await db.notes.put(updated);
   return updated;
 };
@@ -142,63 +120,20 @@ export const listNotes = async (deleted = false): Promise<Note[]> => {
 
 export const listTrash = async (): Promise<Note[]> => {
   const all = await db.notes.toArray();
-  return all.filter((note) => note.deletedAt !== null).sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0));
+  return all
+    .filter((note) => note.deletedAt !== null)
+    .sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0));
 };
 
-export const searchNotes = async (query: string, queryEmbedding?: number[]): Promise<Note[]> => {
+export const searchNotes = async (query: string): Promise<Note[]> => {
   const normalized = query.trim().toLowerCase();
   if (normalized.length === 0) return listNotes(false);
 
   const notes = await listNotes(false);
-  if (queryEmbedding && queryEmbedding.length > 0) {
-    return notes
-      .map((note) => ({ note, score: note.embedding ? cosineSimilarity(queryEmbedding, note.embedding) : 0 }))
-      .filter(({ score }) => score > SEMANTIC_MATCH_THRESHOLD)
-      .sort((left, right) => right.score - left.score)
-      .map(({ note }) => note);
-  }
-
-  return lexicalSearch(notes, normalized);
-};
-
-export type RelatedNote = { note: Note; score: number };
-
-export const getRelatedNotes = async (noteId: string, limit = 3): Promise<RelatedNote[]> => {
-  const current = await db.notes.get(noteId);
-  if (!current?.embedding) return [];
-
-  const notes = await listNotes(false);
-  return notes
-    .filter((note) => note.id !== noteId && note.embedding !== null)
-    .map((note) => ({ note, score: cosineSimilarity(current.embedding ?? [], note.embedding ?? []) }))
-    .filter(({ score }) => score > SEMANTIC_MATCH_THRESHOLD)
-    .sort((left, right) => right.score - left.score)
-    .slice(0, limit);
-};
-
-export const getSettings = async (): Promise<SettingsRecord> => {
-  const existing = await db.settings.get("default");
-  if (existing) return SettingsSchema.parse(existing);
-
-  const created = defaultSettings();
-  await db.settings.put(created);
-  return created;
-};
-
-export const getCloudflareCredentials = async (): Promise<CloudflareCredentials> => {
-  const settings = await getSettings();
-  return { accountId: settings.cloudflareAccountId, apiToken: settings.cloudflareApiToken };
-};
-
-export const saveCloudflareCredentials = async (credentials: CloudflareCredentials): Promise<SettingsRecord> => {
-  const current = await getSettings();
-  const updated = SettingsSchema.parse({
-    ...current,
-    cloudflareAccountId: credentials.accountId.trim(),
-    cloudflareApiToken: credentials.apiToken.trim(),
+  return notes.filter((note) => {
+    const haystack = [note.title, note.body, note.tags.join(" ")].join(" ").toLowerCase();
+    return haystack.includes(normalized);
   });
-  await db.settings.put(updated);
-  return updated;
 };
 
 export const exportAll = async (): Promise<ExportPayload> => {

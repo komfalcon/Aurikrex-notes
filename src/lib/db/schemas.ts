@@ -15,9 +15,7 @@ export const NoteSchema = z.object({
 
 export const SettingsSchema = z.object({
   id: z.literal("default"),
-  lastBackupAt: z.number().int().nonnegative(),
-  cloudflareAccountId: z.string().default(""),
-  cloudflareApiToken: z.string().default(""),
+  lastBackupAt: z.number().int().nonnegative()
 });
 
 export const NeuronLedgerSchema = z.object({
@@ -33,7 +31,7 @@ export const ExportSchema = z.object({
   app: z.literal("aurikrex-notes"),
   schemaVersion: z.union([z.literal(1), z.literal(2)]),
   exportedAt: z.number().int().nonnegative(),
-  notes: z.array(NoteSchema),
+  notes: z.array(NoteSchema)
 });
 
 export type Note = z.infer<typeof NoteSchema>;

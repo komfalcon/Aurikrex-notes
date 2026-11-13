@@ -13,7 +13,6 @@ import { softDeleteNote, updateNote, listNotes } from "@/lib/notes/repository";
 export const NoteClient = () => {
   const params = useSearchParams();
   const router = useRouter();
-  const noteId = params.get("id") ?? "";
   const [note, setNote] = useState<Note | null>(null);
   const [allNotes, setAllNotes] = useState<Note[]>([]);
   const [isSummarizing, setIsSummarizing] = useState(false);
@@ -26,10 +25,9 @@ export const NoteClient = () => {
       if (!id) return;
       const value = await db.notes.get(id);
       if (!value || value.deletedAt !== null) {
-        setLoadState("not-found");
+        setNote(null);
         return;
       }
-      latestNoteRef.current = value;
       setNote(value);
       noteRef.current = value;
       smartTitleAttempted.current = false;

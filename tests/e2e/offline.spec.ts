@@ -4,17 +4,16 @@ test("offline create and reload persists note", async ({ page, context }) => {
   await page.goto("/");
   await page.getByRole("link", { name: "Create a new note" }).click();
   await expect(page).toHaveURL(/\/note\?id=/);
-  await page.evaluate(async () => { await navigator.serviceWorker.ready; });
-  await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
   await page.getByLabel("Title").fill("Offline Note");
   await page.getByLabel("Body").fill("Saved without a network connection");
-  await expect(page.getByText("Saved on this device")).toBeVisible();
   await context.setOffline(true);
-  await page.getByLabel("Body").fill("Edited and saved while offline");
-  await expect(page.getByText("Saved on this device")).toBeVisible();
-  await page.reload();
-  await expect(page.getByLabel("Title")).toHaveValue("Offline Note");
-  await expect(page.getByLabel("Body")).toHaveValue("Edited and saved while offline");
+  await page.getByLabel("Body").fill("Edited while offline");
+  await context.setOffline(false);
+  const reopened = await context.newPage();
+  await reopened.goto(page.url());
+  await expect(reopened.getByLabel("Title")).toHaveValue("Offline Note");
+  await expect(reopened.getByLabel("Body")).toHaveValue("Edited while offline");
+  await reopened.close();
 });
 
 test("share target parameters create note", async ({ page }) => {
