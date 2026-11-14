@@ -4,6 +4,8 @@ import type { FeatureExtractionPipeline } from "@huggingface/transformers";
 import type { Note } from "@/lib/db/schemas";
 
 const MODEL_ID = "Xenova/all-MiniLM-L6-v2";
+const ONNX_RUNTIME_BASE_URL =
+  "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.0-dev.20260914-8d85527a0/dist/";
 let extractorPromise: Promise<FeatureExtractionPipeline> | null = null;
 
 const getExtractor = (): Promise<FeatureExtractionPipeline> => {
@@ -11,6 +13,10 @@ const getExtractor = (): Promise<FeatureExtractionPipeline> => {
     const { env, pipeline } = await import("@huggingface/transformers");
     env.allowLocalModels = false;
     env.useBrowserCache = true;
+    env.backends.onnx.wasm!.wasmPaths = {
+      mjs: `${ONNX_RUNTIME_BASE_URL}ort-wasm-simd-threaded.mjs`,
+      wasm: `${ONNX_RUNTIME_BASE_URL}ort-wasm-simd-threaded.wasm`,
+    };
     return pipeline("feature-extraction", MODEL_ID);
   })();
   return extractorPromise;
