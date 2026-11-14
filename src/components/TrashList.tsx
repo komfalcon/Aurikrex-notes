@@ -1,10 +1,11 @@
 import type { Note } from "@/lib/db/schemas";
+import { Icon } from "./AppShell";
 
 type TrashListProps = { notes: Note[]; onRestore: (id: string) => void };
 const RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 const formatDate = (time: number): string => new Date(time).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 
-export const TrashList = ({ notes, onRestore }: TrashListProps) => notes.length === 0 ? <div className="empty-state"><div className="empty-icon"><span>✓</span></div><h2>Trash is empty.</h2><p>Deleted notes stay on this device for 30 days. Expired notes are only permanently removed when you choose to purge them.</p></div> : <ul className="note-list">{notes.map((note) => {
+export const TrashList = ({ notes, onRestore }: TrashListProps) => notes.length === 0 ? <div className="empty-state"><div className="empty-icon"><Icon name="check" size={24} /></div><h2>Trash is empty.</h2><p>Deleted notes stay on this device for 30 days. Expired notes are only permanently removed when you choose to purge them.</p></div> : <ul className="note-list">{notes.map((note) => {
   const deletedAt = note.deletedAt ?? note.updatedAt;
   const eligibleAt = deletedAt + RETENTION_MS;
   const eligible = Date.now() >= eligibleAt;

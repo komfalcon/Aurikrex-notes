@@ -93,6 +93,6 @@ export const NoteClient = () => {
   const relatedNotes = rankRelatedNotes(note, allNotes);
   return <AppShell title="Edit Note">
     <div className="p-4 border-b border-slate-800 flex gap-2"><button type="button" className="px-3 py-2 rounded bg-warning text-deeper" onClick={async () => { await softDeleteNote(note.id); router.replace("/"); }}>Move to trash</button></div>
-    <NoteEditor note={note} onChange={(updates) => void handleChange(updates)} onSummarize={handleSummarize} canSummarize={Boolean(getCloudflareCredentials() && note.body.trim())} isSummarizing={isSummarizing} relatedNotes={relatedNotes} />
+    <NoteEditor note={note} onChange={handleChange} onSummarize={handleSummarize} canSummarize={Boolean(getCloudflareCredentials() && note.body.trim())} isSummarizing={isSummarizing} relatedNotes={relatedNotes} />
   </AppShell>;
 };

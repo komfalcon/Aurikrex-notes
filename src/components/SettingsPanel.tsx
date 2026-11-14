@@ -49,8 +49,10 @@ export const SettingsPanel = ({ lastBackupAt, onExport, onImport, credentials, b
   return <div className="settings-wrap">
     <section className="settings-card">
       <div><p className="settings-label">Your data</p><h2>Keep your notes yours.</h2><p className="settings-copy">Everything is stored on this device. Export a backup whenever you like.</p></div>
-      <button type="button" className="primary-button" onClick={onExport}>Export notes</button>
-      <label className="secondary-button"><span>Import backup</span><input type="file" accept="application/json" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; await onImport(await file.text()); event.target.value = ""; }} /></label>
+      <div className="settings-actions data-actions">
+        <button type="button" className="primary-button" onClick={onExport}>Export notes</button>
+        <label className="secondary-button"><span>Import backup</span><input type="file" accept="application/json" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; await onImport(await file.text()); event.target.value = ""; }} /></label>
+      </div>
     </section>
     <section className="settings-card">
       <div><p className="settings-label">Cloudflare Workers AI</p><h2>Bring your own key.</h2><p className="settings-copy">Use the Free-plan GLM-4.7-Flash model. Your credentials stay in this browser and are sent only to Cloudflare.</p></div>
