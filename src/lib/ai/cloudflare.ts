@@ -115,7 +115,10 @@ export const runCloudflareText = async (messages: Array<{ role: "system" | "user
   try {
     rawPayload = await response.json() as unknown;
   } catch {
-    throw new Error("Cloudflare AI returned an unreadable response. Try again when you are online.");
+    if (response.status === 404) {
+      throw new Error("The AI proxy is not deployed at /api/ai. Deploy the Cloudflare Pages Functions directory with the site.");
+    }
+    throw new Error(`Cloudflare AI returned an unreadable response (${response.status}). Try again when you are online.`);
   }
   const parsedPayload = CloudflareResponseSchema.safeParse(rawPayload);
   if (!parsedPayload.success) throw new Error("Cloudflare AI returned an unexpected response. Try again.");

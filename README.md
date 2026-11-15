@@ -73,11 +73,11 @@ Offline-first notes PWA built with Next.js App Router, strict TypeScript, Dexie 
 
 ## Cloudflare Pages deployment
 
-1. Build the app: `pnpm build`
-2. Deploy the `out/` directory as static output on Cloudflare Pages.
-3. Build command: `pnpm build`
-4. Output directory: `out`
-5. No runtime environment variables or secrets are required.
+1. Connect the repository to Cloudflare Pages (or deploy with Wrangler), so the root `functions/` directory is included.
+2. Build the app: `pnpm build`
+3. Use `out` as the Pages build output directory.
+4. Do not upload `out/` through a generic static-hosting flow; that omits `functions/api/ai.ts` and breaks `/api/ai`.
+5. No runtime environment variables or secrets are required; users provide their own token in Settings.
 
 ## Reusing as an Aurikrex template
 
