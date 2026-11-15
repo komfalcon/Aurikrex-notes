@@ -12,8 +12,17 @@ export default function SettingsPage() {
   const [balance, setBalance] = useState<NeuronBalance | null>(null);
 
   const refreshAi = async (): Promise<void> => {
-    setCredentials(getCloudflareCredentials());
-    setBalance(await getNeuronBalance());
+    const stored = getCloudflareCredentials();
+    setCredentials(stored);
+    if (!stored) {
+      setBalance(null);
+      return;
+    }
+    try {
+      setBalance(await getNeuronBalance());
+    } catch {
+      setBalance(null);
+    }
   };
 
   useEffect(() => {

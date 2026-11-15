@@ -11,11 +11,12 @@ type NoteEditorProps = {
   onSummarize: () => Promise<void>;
   canSummarize: boolean;
   isSummarizing: boolean;
-  relatedNotes: RelatedNote[];
+  isGeneratingTitle: boolean;
   aiError: string | null;
+  relatedNotes: RelatedNote[];
 };
 
-export const NoteEditor = ({ note, onChange, onSummarize, canSummarize, isSummarizing, relatedNotes, aiError }: NoteEditorProps) => {
+export const NoteEditor = ({ note, onChange, onSummarize, canSummarize, isSummarizing, isGeneratingTitle, aiError, relatedNotes }: NoteEditorProps) => {
   const [saveStatus, setSaveStatus] = useState<"saving" | "saved" | "error">("saved");
   const saveRevision = useRef(0);
   const saveChanges = useCallback((updates: Pick<Note, "title" | "body" | "tags">) => {
@@ -40,9 +41,10 @@ export const NoteEditor = ({ note, onChange, onSummarize, canSummarize, isSummar
         {dictation.isSupported && <button type="button" className={`tool-button${dictation.isListening ? " active" : ""}`} onClick={dictation.toggle}>{dictation.isListening ? "Stop dictation" : "Dictate"}</button>}
         <button type="button" className="tool-button" onClick={() => void onSummarize()} disabled={!canSummarize || isSummarizing}>{isSummarizing ? "Summarizing…" : "Summarize"}</button>
       </div>
+      {isGeneratingTitle && <p className="ai-status" role="status" aria-live="polite">Creating a title…</p>}
       {aiError && <p className="ai-error" role="alert">{aiError}</p>}
       <textarea aria-label="Body" className="editor-body" value={note.body} onChange={(event) => saveChanges({ title: note.title, body: event.target.value, tags: note.tags })} placeholder="Start writing..." />
-      {dictation.error && <p className="ai-error">{dictation.error}</p>}
+      {dictation.error && <p className="ai-error" role="alert">{dictation.error}</p>}
       {relatedNotes.length > 0 && <section className="related-notes" aria-label="Related Notes"><p className="settings-label">Related notes</p>{relatedNotes.map(({ note: related, score }) => <a key={related.id} className="related-note" href={`/note?id=${related.id}`}><span>{related.title || "Untitled note"}</span><small>{Math.round(score * 100)}%</small></a>)}</section>}
       <div className="editor-footer">
         <label className="tag-input"><span>Tags</span><input aria-label="Tags" value={note.tags.join(", ")} onChange={(event) => saveChanges({ title: note.title, body: note.body, tags: event.target.value.split(",").map((tag) => tag.trim()).filter((tag) => tag.length > 0) })} placeholder="Add tags" /></label>

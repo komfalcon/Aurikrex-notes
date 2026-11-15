@@ -26,6 +26,7 @@ export const SettingsPanel = ({ lastBackupAt, onExport, onImport, credentials, b
   const [apiToken, setApiToken] = useState(credentials?.apiToken ?? "");
   const [saved, setSaved] = useState(Boolean(credentials));
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
@@ -41,9 +42,28 @@ export const SettingsPanel = ({ lastBackupAt, onExport, onImport, credentials, b
 
   const save = async (): Promise<void> => {
     setSaving(true);
-    await onSaveCredentials({ accountId, apiToken });
-    setSaved(true);
-    setSaving(false);
+    setSaveError(null);
+    try {
+      await onSaveCredentials({ accountId, apiToken });
+      setSaved(true);
+    } catch (error) {
+      setSaved(false);
+      setSaveError(error instanceof Error ? error.message : "Could not save credentials in this browser.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const forget = async (): Promise<void> => {
+    setSaveError(null);
+    try {
+      await onForgetCredentials();
+      setSaved(false);
+      setAccountId("");
+      setApiToken("");
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Could not remove credentials from this browser.");
+    }
   };
 
   return <div className="settings-wrap">
@@ -55,10 +75,11 @@ export const SettingsPanel = ({ lastBackupAt, onExport, onImport, credentials, b
       </div>
     </section>
     <section className="settings-card">
-      <div><p className="settings-label">Cloudflare Workers AI</p><h2>Bring your own key.</h2><p className="settings-copy">Use the Free-plan GLM-4.7-Flash model. Your credentials stay in this browser and are sent only to Cloudflare. The token must include Account → Workers AI → Read permission; Cloudflare documents this permission as allowing model invocation.</p></div>
+      <div><p className="settings-label">Cloudflare Workers AI</p><h2>Bring your own key.</h2><p className="settings-copy">A-Notes uses Mistral Small 3.1. Your credentials are saved on this device and forwarded to Cloudflare only when you use an AI tool. A-Notes does not store them on its server. The token needs Account → Workers AI → Read permission for model invocation.</p></div>
       <label className="settings-field"><span>Account ID</span><input aria-label="Cloudflare Account ID" value={accountId} onChange={(event) => { setAccountId(event.target.value); setSaved(false); }} placeholder="Cloudflare account ID" autoComplete="off" /></label>
       <label className="settings-field"><span>API token</span><input aria-label="Cloudflare API Token" type="password" value={apiToken} onChange={(event) => { setApiToken(event.target.value); setSaved(false); }} placeholder="Workers AI API token" autoComplete="off" /></label>
-      <div className="settings-actions"><button type="button" className="primary-button" disabled={saving || !accountId.trim() || !apiToken.trim()} onClick={() => void save()}>{saving ? "Saving…" : saved ? "Credentials saved" : "Save credentials"}</button>{credentials && <button type="button" className="secondary-button" onClick={() => void onForgetCredentials()}>Forget credentials</button>}</div>
+      <div className="settings-actions"><button type="button" className="primary-button" disabled={saving || !accountId.trim() || !apiToken.trim()} onClick={() => void save()}>{saving ? "Saving…" : saved ? "Credentials saved" : "Save credentials"}</button>{credentials && <button type="button" className="secondary-button" onClick={() => void forget()}>Forget credentials</button>}</div>
+      {saveError && <p className="ai-error" role="alert">{saveError}</p>}
       {balance && <div className="neuron-card"><p className="settings-label">Workers AI free allowance</p><strong>{formatNeurons(balance.remaining)} / {formatNeurons(balance.allowance)} Neurons remaining today</strong><span>Estimated from this app’s requests · resets in {formatCountdown(balance.resetAt - now)} at 00:00 UTC</span><a href="https://dash.cloudflare.com/?to=/:account/ai/workers-ai" target="_blank" rel="noreferrer">Open Cloudflare usage dashboard</a></div>}
     </section>
     <section className="settings-card quiet"><p className="settings-label">Storage</p><p className="settings-copy">Offline-first IndexedDB storage is active.</p><p className="backup-time">Last backup: <strong>{lastBackupAt ? new Date(lastBackupAt).toLocaleString() : "Never"}</strong></p></section>

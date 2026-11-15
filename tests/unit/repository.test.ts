@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
-import { createNote, getNeuronLedger, purgeExpired, recordNeuronUsage, softDeleteNote } from "@/lib/notes/repository";
+import { createNote, getNeuronLedger, purgeExpired, recordNeuronUsage, softDeleteNote, updateNote, updateNoteIfContentMatches } from "@/lib/notes/repository";
 
 describe("purgeExpired", () => {
   beforeEach(async () => {
@@ -46,6 +46,33 @@ describe("daily Neurons ledger", () => {
     expect((await getNeuronLedger("account-a", firstDay)).usedNeurons).toBe(12.5);
     expect((await getNeuronLedger("account-a", firstDay + 120_000)).usedNeurons).toBe(0);
     expect((await getNeuronLedger("account-b", firstDay)).usedNeurons).toBe(0);
+  });
+});
+
+describe("content-checked note updates", () => {
+  beforeEach(async () => {
+    await db.delete();
+    db.close();
+    await db.open();
+  });
+
+  it("refuses a stale AI result after the note body has changed", async () => {
+    const note = await createNote({ title: "Original title", body: "Original body" });
+    await updateNote(note.id, { body: "The user’s newer edit" });
+
+    const updated = await updateNoteIfContentMatches(note.id, { body: "Original body" }, { body: "AI summary" });
+
+    expect(updated).toBeNull();
+    await expect(db.notes.get(note.id)).resolves.toMatchObject({ body: "The user’s newer edit" });
+  });
+
+  it("applies a title/body update without reverting unrelated current metadata", async () => {
+    const note = await createNote({ body: "Original body", tags: ["initial"] });
+    await updateNote(note.id, { title: "Current title", tags: ["current"] });
+
+    const updated = await updateNoteIfContentMatches(note.id, { body: "Original body" }, { body: "AI summary" });
+
+    expect(updated).toMatchObject({ title: "Current title", body: "AI summary", tags: ["current"] });
   });
 });
 

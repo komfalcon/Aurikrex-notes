@@ -38,7 +38,7 @@ export const createNote = async (
 export const updateNote = async (
   id: string,
   updates: Partial<Pick<Note, "title" | "body" | "tags" | "embedding">>
-): Promise<Note | null> => {
+): Promise<Note | null> => db.transaction("rw", db.notes, async () => {
   const existing = await db.notes.get(id);
   if (!existing) return null;
 
@@ -52,7 +52,28 @@ export const updateNote = async (
 
   await db.notes.put(updated);
   return updated;
-};
+});
+
+export const updateNoteIfContentMatches = async (
+  id: string,
+  expected: { body: string; title?: string; tags?: string[] },
+  updates: Partial<Pick<Note, "title" | "body" | "tags" | "embedding">>
+): Promise<Note | null> => db.transaction("rw", db.notes, async () => {
+  const existing = await db.notes.get(id);
+  if (!existing || existing.deletedAt !== null || existing.body !== expected.body) return null;
+  if (expected.title !== undefined && existing.title !== expected.title) return null;
+  if (expected.tags && (existing.tags.length !== expected.tags.length || existing.tags.some((tag, index) => tag !== expected.tags?.[index]))) return null;
+
+  const updated = NoteSchema.parse({
+    ...existing,
+    ...updates,
+    tags: updates.tags ? normalizeTags(updates.tags) : existing.tags,
+    updatedAt: Date.now(),
+    version: existing.version + 1
+  });
+  await db.notes.put(updated);
+  return updated;
+});
 
 export const softDeleteNote = async (id: string): Promise<boolean> => {
   const existing = await db.notes.get(id);

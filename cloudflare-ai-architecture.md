@@ -1,30 +1,28 @@
 # A-Notes Cloudflare AI configuration
 
-## Diagnosis
+## Diagnosis and request flow
 
-The browser error `Failed to fetch` came from calling Cloudflare's REST API directly from the PWA. Cloudflare's official CORS proxy example describes this exact browser failure when a third-party API does not return the required cross-origin headers. A-Notes now sends the request to its same-origin `/api/cloudflare-ai` Pages Function, which forwards the request server-side to Cloudflare.
+The browser's `Failed to fetch` error came from calling Cloudflare's REST API directly from the PWA, where the API's CORS policy blocked the request. A-Notes now sends AI requests to its same-origin `POST /api/ai` Cloudflare Pages Function. The Function validates the request, forwards it to the account-scoped Workers AI endpoint, and returns Cloudflare's response.
 
-## Why the Account ID is required
+The Workers AI endpoint is account-scoped: `POST /accounts/{account_id}/ai/run/{model_name}`. The Account ID is therefore required even when the token is valid; it identifies which Cloudflare account to use and is not a secret.
 
-Cloudflare's official Workers AI API endpoint is account-scoped:
+## Model and allowance
 
-`POST /accounts/{account_id}/ai/run/{model_name}`
+A-Notes uses Mistral Small 3.1, model ID `@cf/mistralai/mistral-small-3.1-24b-instruct`. Cloudflare documents a 128K-token context window and marks the model as zero data retention. The published rate is 31,876 Neurons per million input tokens and 50,488 per million output tokens; the app uses these rates for its local usage estimate.
 
-A token authenticates the request, but the endpoint still requires the target account in the URL. This is necessary because one user can have access to multiple Cloudflare accounts. The Account ID is not a secret.
+Cloudflare's free Workers AI allocation is 10,000 Neurons per account per day, shared across models and resetting at 00:00 UTC. Availability and billing remain subject to Cloudflare account eligibility and its current pricing policy.
 
-## Model choice
+## Credential, note, and request handling
 
-A-Notes keeps `@cf/zai-org/glm-4.7-flash`. Cloudflare's current pricing documentation lists it in the free Workers AI allocation and the API documentation confirms that Workers AI Read or Workers AI Write permissions are accepted for model execution. The current DeepSeek V4 models listed by Cloudflare require a paid billing method, so switching to them would not fix the browser failure and could remove the free-plan behavior. Llama 3.2 3B is documented for summarization but is scheduled for deprecation on November 20, 2026, so it is not a stable default for this app.
+The BYOK Account ID and token are stored in this browser's local storage. When an AI action is used, the token is sent in the `Authorization` header to the app's same-origin Pages Function; note content is included in the AI request. The Function does not persist or log the token, requires an account ID and valid bounded message payload, rejects cross-origin browser requests, and invokes only the configured Mistral model. The token is forwarded to Cloudflare for that request.
 
-## Security behavior
-
-The BYOK token is sent from the browser to the same-origin Pages Function only for the current request. The Function does not persist it. The Function validates the model against an allowlist and forwards the upstream status and JSON error without exposing the token.
+A-Notes does not store credentials or note data on its server. Cloudflare Workers AI receives note text for generated titles and summaries. Semantic search uses the browser-loaded embedding model locally, with lexical search as a fallback.
 
 ## Sources
 
-- [1] [Cloudflare Run a Workers AI model API reference](https://developers.cloudflare.com/api/resources/ai/methods/run/)
-- [2] [Cloudflare Workers AI pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/)
-- [3] [Cloudflare Workers AI model catalog](https://developers.cloudflare.com/workers-ai/models/)
-- [4] [Cloudflare CORS header proxy example](https://developers.cloudflare.com/workers/examples/cors-header-proxy/)
-- [5] [Cloudflare Pages Functions getting started](https://developers.cloudflare.com/pages/functions/get-started/)
-- [6] [Cloudflare Pages Functions bindings](https://developers.cloudflare.com/pages/functions/bindings/)
+- [Cloudflare Workers AI model API](https://developers.cloudflare.com/api/resources/ai/methods/run/)
+- [Workers AI pricing and free allocation](https://developers.cloudflare.com/workers-ai/platform/pricing/)
+- [Mistral Small 3.1 model details and data-retention label](https://developers.cloudflare.com/workers-ai/models/mistral-small-3.1-24b-instruct/)
+- [Workers AI model catalog](https://developers.cloudflare.com/workers-ai/models/)
+- [Cloudflare CORS proxy example](https://developers.cloudflare.com/workers/examples/cors-header-proxy/)
+- [Cloudflare Pages Functions](https://developers.cloudflare.com/pages/functions/get-started/)

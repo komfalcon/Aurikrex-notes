@@ -9,16 +9,21 @@ const ONNX_RUNTIME_BASE_URL =
 let extractorPromise: Promise<FeatureExtractionPipeline> | null = null;
 
 const getExtractor = (): Promise<FeatureExtractionPipeline> => {
-  extractorPromise ??= (async () => {
-    const { env, pipeline } = await import("@huggingface/transformers");
-    env.allowLocalModels = false;
-    env.useBrowserCache = true;
-    env.backends.onnx.wasm!.wasmPaths = {
-      mjs: `${ONNX_RUNTIME_BASE_URL}ort-wasm-simd-threaded.mjs`,
-      wasm: `${ONNX_RUNTIME_BASE_URL}ort-wasm-simd-threaded.wasm`,
-    };
-    return pipeline("feature-extraction", MODEL_ID);
-  })();
+  if (!extractorPromise) {
+    extractorPromise = (async () => {
+      const { env, pipeline } = await import("@huggingface/transformers");
+      env.allowLocalModels = false;
+      env.useBrowserCache = true;
+      env.backends.onnx.wasm!.wasmPaths = {
+        mjs: `${ONNX_RUNTIME_BASE_URL}ort-wasm-simd-threaded.mjs`,
+        wasm: `${ONNX_RUNTIME_BASE_URL}ort-wasm-simd-threaded.wasm`,
+      };
+      return pipeline("feature-extraction", MODEL_ID);
+    })().catch((error: unknown) => {
+      extractorPromise = null;
+      throw error;
+    });
+  }
   return extractorPromise;
 };
 

@@ -46,6 +46,7 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .search-clear { position: absolute; top: 2px; right: 2px; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 13px; background: transparent; color: var(--muted); font-size: 24px; line-height: 1; }
 .search-clear:hover { background: rgba(148, 163, 184, .1); color: #fff; }
 .list-caption { min-height: 32px; margin: 0; padding: 9px 18px 7px; color: var(--muted); font: 500 10px/1.4 var(--font-jetbrains-mono), monospace; text-transform: uppercase; letter-spacing: .12em; }
+.search-status { margin: -2px 0 4px; padding: 0 18px 7px; color: #93c5fd; font-size: 11px; line-height: 1.45; }
 .note-list { min-height: 0; flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 4px 18px 106px; margin: 0; list-style: none; }
 .note-card { position: relative; display: flex; gap: 6px; margin-bottom: 10px; padding: 15px 12px 14px 16px; border: 1px solid var(--line); border-radius: 17px; background: rgba(11, 18, 34, .9); transition: border-color .18s ease, transform .18s ease; }
 .note-card:hover { border-color: rgba(59, 130, 246, .42); transform: translateY(-1px); }
@@ -84,6 +85,7 @@ button:disabled { cursor: not-allowed; opacity: .6; }
 .save-state.saving { color: #93c5fd; }
 .save-state.saved { color: #86efac; }
 .save-state.error { color: #fca5a5; }
+.ai-status { margin: 0 0 6px; color: #93c5fd; font-size: 11px; }
 .ai-error { margin: 4px 0 8px; color: #fbbf24; font-size: 11px; }
 .related-notes { padding: 14px 0; border-top: 1px solid rgba(148,163,184,.12); }
 .related-note { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 38px; color: #cbd5e1; font-size: 12px; }
