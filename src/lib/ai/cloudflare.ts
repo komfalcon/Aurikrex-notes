@@ -4,7 +4,7 @@ import { getNeuronLedger, recordNeuronUsage } from "@/lib/notes/repository";
 export const CLOUDFLARE_MODEL = "@cf/zai-org/glm-4.7-flash";
 export const DAILY_NEURON_ALLOWANCE = 10_000;
 const CREDENTIALS_KEY = "aurikrex-notes.cloudflare.credentials";
-const CLOUDFLARE_AI_URL = "https://api.cloudflare.com/client/v4/accounts";
+const AI_PROXY_URL = "/api/cloudflare-ai";
 
 const CredentialsSchema = z.object({ accountId: z.string().trim().min(1), apiToken: z.string().trim().min(1) });
 const CloudflareResponseSchema = z.object({
@@ -77,11 +77,16 @@ export const runCloudflareText = async (messages: Array<{ role: "system" | "user
   const credentials = getCloudflareCredentials();
   if (!credentials) throw new Error("Cloudflare credentials are not configured.");
 
-  const response = await fetch(`${CLOUDFLARE_AI_URL}/${encodeURIComponent(credentials.accountId)}/ai/run/${CLOUDFLARE_MODEL}`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${credentials.apiToken}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, max_tokens: 256, temperature: 0.2 })
-  });
+  let response: Response;
+  try {
+    response = await fetch(AI_PROXY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ accountId: credentials.accountId, apiToken: credentials.apiToken, model: CLOUDFLARE_MODEL, messages })
+    });
+  } catch {
+    throw new Error("A-Notes could not reach its AI proxy. Check your connection and update the installed app.");
+  }
 
   const payload = CloudflareResponseSchema.parse(await response.json());
   if (!response.ok || payload.success === false) {
