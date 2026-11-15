@@ -64,6 +64,15 @@ const responseText = (result: TextResult): string => {
   return result.choices?.[0]?.message?.content?.trim() ?? "";
 };
 
+const errorDetail = (errors: unknown[] | undefined): string => {
+  if (!errors?.length) return "";
+  return errors.map((error) => {
+    if (typeof error === "string") return error;
+    if (error && typeof error === "object" && "message" in error && typeof error.message === "string") return error.message;
+    return JSON.stringify(error);
+  }).join("; ");
+};
+
 export const runCloudflareText = async (messages: Array<{ role: "system" | "user"; content: string }>): Promise<{ text: string; balance: NeuronBalance }> => {
   const credentials = getCloudflareCredentials();
   if (!credentials) throw new Error("Cloudflare credentials are not configured.");
@@ -75,7 +84,10 @@ export const runCloudflareText = async (messages: Array<{ role: "system" | "user
   });
 
   const payload = CloudflareResponseSchema.parse(await response.json());
-  if (!response.ok || payload.success === false) throw new Error("Cloudflare AI request failed.");
+  if (!response.ok || payload.success === false) {
+    const detail = errorDetail(payload.errors);
+    throw new Error(`Cloudflare AI request failed (${response.status}). ${detail || "The token may need Account Workers AI Run permission."}`);
+  }
 
   const result = TextResultSchema.parse(payload.result ?? {});
   const promptTokens = result.usage?.prompt_tokens ?? messages.reduce((sum, message) => sum + estimateTokens(message.content), 0);

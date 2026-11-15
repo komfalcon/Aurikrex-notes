@@ -12,9 +12,10 @@ type NoteEditorProps = {
   canSummarize: boolean;
   isSummarizing: boolean;
   relatedNotes: RelatedNote[];
+  aiError: string | null;
 };
 
-export const NoteEditor = ({ note, onChange, onSummarize, canSummarize, isSummarizing, relatedNotes }: NoteEditorProps) => {
+export const NoteEditor = ({ note, onChange, onSummarize, canSummarize, isSummarizing, relatedNotes, aiError }: NoteEditorProps) => {
   const [saveStatus, setSaveStatus] = useState<"saving" | "saved" | "error">("saved");
   const saveRevision = useRef(0);
   const saveChanges = useCallback((updates: Pick<Note, "title" | "body" | "tags">) => {
@@ -39,6 +40,7 @@ export const NoteEditor = ({ note, onChange, onSummarize, canSummarize, isSummar
         {dictation.isSupported && <button type="button" className={`tool-button${dictation.isListening ? " active" : ""}`} onClick={dictation.toggle}>{dictation.isListening ? "Stop dictation" : "Dictate"}</button>}
         <button type="button" className="tool-button" onClick={() => void onSummarize()} disabled={!canSummarize || isSummarizing}>{isSummarizing ? "Summarizing…" : "Summarize"}</button>
       </div>
+      {aiError && <p className="ai-error" role="alert">{aiError}</p>}
       <textarea aria-label="Body" className="editor-body" value={note.body} onChange={(event) => saveChanges({ title: note.title, body: event.target.value, tags: note.tags })} placeholder="Start writing..." />
       {dictation.error && <p className="ai-error">{dictation.error}</p>}
       {relatedNotes.length > 0 && <section className="related-notes" aria-label="Related Notes"><p className="settings-label">Related notes</p>{relatedNotes.map(({ note: related, score }) => <a key={related.id} className="related-note" href={`/note?id=${related.id}`}><span>{related.title || "Untitled note"}</span><small>{Math.round(score * 100)}%</small></a>)}</section>}

@@ -55,7 +55,7 @@ export const SettingsPanel = ({ lastBackupAt, onExport, onImport, credentials, b
       </div>
     </section>
     <section className="settings-card">
-      <div><p className="settings-label">Cloudflare Workers AI</p><h2>Bring your own key.</h2><p className="settings-copy">Use the Free-plan GLM-4.7-Flash model. Your credentials stay in this browser and are sent only to Cloudflare.</p></div>
+      <div><p className="settings-label">Cloudflare Workers AI</p><h2>Bring your own key.</h2><p className="settings-copy">Use the Free-plan GLM-4.7-Flash model. Your credentials stay in this browser and are sent only to Cloudflare. The token must include Account → Workers AI → Run permission.</p></div>
       <label className="settings-field"><span>Account ID</span><input aria-label="Cloudflare Account ID" value={accountId} onChange={(event) => { setAccountId(event.target.value); setSaved(false); }} placeholder="Cloudflare account ID" autoComplete="off" /></label>
       <label className="settings-field"><span>API token</span><input aria-label="Cloudflare API Token" type="password" value={apiToken} onChange={(event) => { setApiToken(event.target.value); setSaved(false); }} placeholder="Workers AI API token" autoComplete="off" /></label>
       <div className="settings-actions"><button type="button" className="primary-button" disabled={saving || !accountId.trim() || !apiToken.trim()} onClick={() => void save()}>{saving ? "Saving…" : saved ? "Credentials saved" : "Save credentials"}</button>{credentials && <button type="button" className="secondary-button" onClick={() => void onForgetCredentials()}>Forget credentials</button>}</div>

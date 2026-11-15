@@ -16,6 +16,7 @@ export const NoteClient = () => {
   const [note, setNote] = useState<Note | null>(null);
   const [allNotes, setAllNotes] = useState<Note[]>([]);
   const [isSummarizing, setIsSummarizing] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
   const noteRef = useRef<Note | null>(null);
   const smartTitleAttempted = useRef(false);
 
@@ -52,18 +53,29 @@ export const NoteClient = () => {
   }, [note]);
 
   useEffect(() => {
-    return () => {
-      const current = noteRef.current;
-      if (!current || smartTitleAttempted.current || current.title.trim() || !current.body.trim() || !getCloudflareCredentials()) return;
-      smartTitleAttempted.current = true;
+    const current = note;
+    if (!current || smartTitleAttempted.current || current.title.trim() || !current.body.trim() || !getCloudflareCredentials()) return;
+    smartTitleAttempted.current = true;
+    const timer = window.setTimeout(() => {
       void runCloudflareText([{ role: "user", content: `Create a concise title for this note. Return only the title.\n\n${current.body.slice(0, 200)}` }]).then(async ({ text }) => {
-        if (text.trim()) await updateNote(current.id, { title: text.trim().replace(/^['"]|['"]$/g, "") });
-      }).catch(() => undefined);
-    };
-  }, []);
+        if (text.trim()) {
+          const updated = await updateNote(current.id, { title: text.trim().replace(/^['"]|['"]$/g, "") });
+          if (updated) {
+            setNote(updated);
+            noteRef.current = updated;
+          }
+        }
+      }).catch((error: unknown) => {
+        setAiError(error instanceof Error ? error.message : "Smart title generation failed.");
+      });
+    }, 700);
+    return () => window.clearTimeout(timer);
+  }, [note]);
 
   const handleChange = useCallback(async (updates: Pick<Note, "title" | "body" | "tags">): Promise<void> => {
     if (!note) return;
+    if (updates.body !== note.body) smartTitleAttempted.current = false;
+    setAiError(null);
     const updated = await updateNote(note.id, { ...updates, embedding: updates.body !== note.body ? null : note.embedding });
     if (updated) {
       setNote(updated);
@@ -73,6 +85,7 @@ export const NoteClient = () => {
 
   const handleSummarize = useCallback(async (): Promise<void> => {
     if (!note || !getCloudflareCredentials()) return;
+    setAiError(null);
     setIsSummarizing(true);
     try {
       const result = await runCloudflareText([{ role: "user", content: `Summarize the following text in 3 concise bullet points:\n\n${note.body}` }]);
@@ -83,6 +96,8 @@ export const NoteClient = () => {
           noteRef.current = updated;
         }
       }
+    } catch (error: unknown) {
+      setAiError(error instanceof Error ? error.message : "Summarization failed.");
     } finally {
       setIsSummarizing(false);
     }
@@ -93,6 +108,6 @@ export const NoteClient = () => {
   const relatedNotes = rankRelatedNotes(note, allNotes);
   return <AppShell title="Edit Note">
     <div className="p-4 border-b border-slate-800 flex gap-2"><button type="button" className="px-3 py-2 rounded bg-warning text-deeper" onClick={async () => { await softDeleteNote(note.id); router.replace("/"); }}>Move to trash</button></div>
-    <NoteEditor note={note} onChange={handleChange} onSummarize={handleSummarize} canSummarize={Boolean(getCloudflareCredentials() && note.body.trim())} isSummarizing={isSummarizing} relatedNotes={relatedNotes} />
+    <NoteEditor note={note} onChange={handleChange} onSummarize={handleSummarize} canSummarize={Boolean(getCloudflareCredentials() && note.body.trim())} isSummarizing={isSummarizing} relatedNotes={relatedNotes} aiError={aiError} />
   </AppShell>;
 };
