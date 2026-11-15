@@ -24,10 +24,10 @@
 
 ## Cloudflare free BYOK and Neurons
 
-- [x] Use `@cf/zai-org/glm-4.7-flash` as the default Workers AI model because it is documented as Free-plan compatible; do not use deprecated Llama 3.1.
+- [x] Use `@cf/mistralai/mistral-small-3.1-24b-instruct` as the default Workers AI model; do not use deprecated Llama 3.1.
 - [x] Store the Account ID and API token locally so the app does not ask for them again after reload or PWA relaunch.
 - [x] Mask the token, provide a forget-credentials action, and never send credentials anywhere except Cloudflare.
-- [x] Call the Cloudflare REST model endpoint directly from the browser.
+- [x] Route browser requests through the same-origin Cloudflare Pages Function, which forwards them to the REST model endpoint.
 - [x] Show the 10,000-Neuron daily free allocation, UTC reset countdown, and an explicitly estimated remaining balance.
 - [x] Estimate usage from returned prompt/completion token counts and model pricing, store the ledger locally per account and UTC date, reset at UTC midnight, and link to Cloudflare’s authoritative dashboard.
 - [x] Generate smart titles on editor exit when title is empty, using the first 200 body characters; preserve the note if offline or the request fails.

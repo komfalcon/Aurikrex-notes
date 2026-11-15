@@ -71,4 +71,31 @@ describe("Cloudflare Pages AI function", () => {
     }
     expect(upstreamFetch).not.toHaveBeenCalled();
   });
+
+  it("reports the upstream transport error instead of hiding it behind a generic 502", async () => {
+    upstreamFetch.mockRejectedValue(new Error("network unavailable"));
+
+    const response = await onRequestPost({ request: makeRequest() });
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({
+      success: false,
+      errors: [{ message: "Could not reach Cloudflare Workers AI: network unavailable" }],
+    });
+  });
+
+  it("normalizes non-JSON upstream failures for the browser client", async () => {
+    upstreamFetch.mockResolvedValue(new Response("<html>bad gateway</html>", {
+      status: 502,
+      headers: { "Content-Type": "text/html" },
+    }));
+
+    const response = await onRequestPost({ request: makeRequest() });
+
+    expect(response.status).toBe(502);
+    await expect(response.json()).resolves.toEqual({
+      success: false,
+      errors: [{ message: "Cloudflare returned an unexpected response (502)." }],
+    });
+  });
 });

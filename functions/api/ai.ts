@@ -71,17 +71,27 @@ export const onRequestPost = async ({ request }: { request: Request }): Promise<
         max_tokens: 512,
         temperature: 0.2,
       }),
-      redirect: "error",
     });
     const text = await upstream.text();
+    const contentType = upstream.headers.get("Content-Type") ?? "";
+    if (!contentType.toLowerCase().includes("application/json")) {
+      return json({
+        success: false,
+        errors: [{ message: `Cloudflare returned an unexpected response (${upstream.status}).` }],
+      }, upstream.status >= 400 ? upstream.status : 502);
+    }
     return new Response(text, {
       status: upstream.status,
       headers: {
         ...JSON_HEADERS,
-        "Content-Type": upstream.headers.get("Content-Type") ?? JSON_HEADERS["Content-Type"],
+        "Content-Type": contentType,
       },
     });
-  } catch {
-    return json({ success: false, errors: [{ message: "Could not reach Cloudflare Workers AI. Check your connection and try again." }] }, 502);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "The upstream request failed.";
+    return json({
+      success: false,
+      errors: [{ message: `Could not reach Cloudflare Workers AI: ${message}` }],
+    }, 502);
   }
 };

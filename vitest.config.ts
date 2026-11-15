@@ -4,8 +4,13 @@ import path from "node:path";
 export default defineConfig({
   test: {
     environment: "jsdom",
+    environmentOptions: {
+      jsdom: {
+        url: "https://aurikrex-notes.pages.dev/"
+      }
+    },
     include: ["tests/unit/**/*.test.ts"],
-    setupFiles: []
+    setupFiles: ["tests/setup.ts"]
   },
   resolve: {
     alias: {
