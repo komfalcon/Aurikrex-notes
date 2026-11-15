@@ -86,7 +86,7 @@ export const runCloudflareText = async (messages: Array<{ role: "system" | "user
   const payload = CloudflareResponseSchema.parse(await response.json());
   if (!response.ok || payload.success === false) {
     const detail = errorDetail(payload.errors);
-    throw new Error(`Cloudflare AI request failed (${response.status}). ${detail || "The token may need Account Workers AI Run permission."}`);
+    throw new Error(`Cloudflare AI request failed (${response.status}). ${detail || "The token may need Account Workers AI Read permission, which allows model invocation."}`);
   }
 
   const result = TextResultSchema.parse(payload.result ?? {});
